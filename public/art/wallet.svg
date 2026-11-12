@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300" fill="none">
+<defs>
+<linearGradient id="body" x1="100" y1="85" x2="310" y2="270" gradientUnits="userSpaceOnUse"><stop stop-color="#b8d2b8"/><stop offset=".45" stop-color="#5b8867"/><stop offset="1" stop-color="#245648"/></linearGradient>
+<linearGradient id="card" x1="180" y1="35" x2="330" y2="170" gradientUnits="userSpaceOnUse"><stop stop-color="#f1f3e8"/><stop offset="1" stop-color="#90ad8d"/></linearGradient>
+<linearGradient id="coin"><stop stop-color="#fcf3c0"/><stop offset=".45" stop-color="#f6ce73"/><stop offset="1" stop-color="#ae7b2d"/></linearGradient>
+<linearGradient id="edge"><stop stop-color="#7ba583"/><stop offset="1" stop-color="#183c2d"/></linearGradient>
+<filter id="shadow" x="-50%" y="-50%" width="200%" height="220%"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#172b20" flood-opacity=".35"/></filter>
+<filter id="blur"><feGaussianBlur stdDeviation="9"/></filter>
+</defs>
+<ellipse cx="221" cy="265" rx="134" ry="14" fill="#172b20" opacity=".35" filter="url(#blur)"/>
+<g transform="rotate(-12 220 150)" filter="url(#shadow)">
+<rect x="93" y="110" width="245" height="141" rx="26" fill="#214b3e"/>
+<rect x="125" y="66" width="190" height="119" rx="17" fill="#527a5b" transform="rotate(8 220 125)"/>
+<g transform="rotate(7 224 115)"><rect x="130" y="45" width="190" height="120" rx="17" fill="url(#card)" stroke="#e8f1df"/><rect x="148" y="67" width="28" height="22" rx="5" fill="#c4ae6b"/><path d="M152 78h20m-11-10v20" stroke="#f8efc6"/><path d="M148 133h54m-54 9h32" stroke="#3f6951" stroke-width="4" stroke-linecap="round"/><circle cx="284" cy="134" r="10" fill="#245648" opacity=".3"/><circle cx="296" cy="134" r="10" fill="#245648" opacity=".6"/></g>
+<path d="M94 132q0-22 25-22h187q29 0 29 28v94q0 24-26 24H121q-27 0-27-27Z" fill="url(#body)" stroke="#b5cda7" stroke-opacity=".6"/>
+<path d="M111 126h197M108 239h200" stroke="#d5e4c4" stroke-opacity=".23" stroke-linecap="round"/>
+<rect x="278" y="156" width="69" height="55" rx="15" fill="url(#edge)" stroke="#86ad80" stroke-opacity=".6"/><circle cx="299" cy="183" r="7" fill="#d5e4c4"/><circle cx="297" cy="181" r="3" fill="#faf8ee"/>
+<path d="M120 199h38m-38 9h23" stroke="#e1ebd2" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+</g>
+<g filter="url(#shadow)" transform="rotate(16 351 222)"><ellipse cx="351" cy="228" rx="32" ry="36" fill="#a8782c"/><ellipse cx="346" cy="222" rx="32" ry="36" fill="url(#coin)"/><ellipse cx="346" cy="222" rx="25" ry="29" stroke="#fff1b0" stroke-width="2"/><path d="M353 211c-14-9-24 9-7 11s11 20-4 11m4-29v36" stroke="#986b25" stroke-width="3" stroke-linecap="round"/></g>
+<g transform="rotate(-23 85 86)" filter="url(#shadow)"><ellipse cx="85" cy="88" rx="23" ry="27" fill="#aa7a2f"/><ellipse cx="81" cy="83" rx="23" ry="27" fill="url(#coin)"/><ellipse cx="81" cy="83" rx="17" ry="21" stroke="#fff0ad" stroke-width="2"/><path d="M87 76c-12-7-18 6-7 8s11 15-2 10m3-24v30" stroke="#a67b2c" stroke-width="2.5" stroke-linecap="round"/></g>
+<path d="m365 74 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#d1dfbd" opacity=".75"/>
+</svg>
