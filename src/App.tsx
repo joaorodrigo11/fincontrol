@@ -107,6 +107,10 @@ function App() {
         </div>
         <footer className="mt-12 border-t border-[var(--border)] pt-5 text-center text-xs text-[var(--muted)]">
           Seus dados são privados e sincronizados com segurança.
+          <nav className="mt-2 flex flex-wrap justify-center gap-x-5 text-[var(--button)]" aria-label="Privacidade e contato">
+            <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/privacidade.html">Política de Privacidade</a>
+            <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="mailto:rodim1437@gmail.com">Fale com o Lôro</a>
+          </nav>
         </footer>
       </main>
       </div>

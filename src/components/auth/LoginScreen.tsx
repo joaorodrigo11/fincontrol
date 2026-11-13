@@ -43,7 +43,8 @@ export function LoginScreen() {
               Clareza para cuidar do que importa.
             </h1>
             <p className="mt-5 max-w-sm text-base leading-7 text-white/70">
-              Organize seu mês, acompanhe suas escolhas e planeje os próximos passos.
+              O Lôro é um projeto 100% gratuito para controle financeiro pessoal. Registre receitas e despesas,
+              acompanhe parcelas e veja quanto ainda pode gastar no mês.
             </p>
           </div>
           <p className="text-sm text-white/55">Um espaço só seu, seguro e pessoal.</p>
@@ -79,8 +80,12 @@ export function LoginScreen() {
             {busy ? 'Conectando...' : 'Entrar com Google'}
           </button>
           <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
-            Seus dados financeiros são privados e visíveis apenas para você.
+            Usamos nome, e-mail e foto da sua conta Google para identificar seu painel.
           </p>
+          <nav className="mt-3 flex flex-wrap gap-x-5 text-sm text-[var(--button)]" aria-label="Privacidade e contato">
+            <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/privacidade.html">Política de Privacidade</a>
+            <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="mailto:rodim1437@gmail.com">Fale com o Lôro</a>
+          </nav>
         </div>
       </section>
     </main>
