@@ -54,7 +54,7 @@ export function buildTransactionRows(input: NewTransaction, userId: string, toda
     type: input.type,
     payment_method: input.payment_method,
     status: credit ? (date.slice(0, 7) <= today.slice(0, 7) ? 'pending' : 'planned')
-      : repeating && date > today ? 'planned' : 'paid',
+      : date > today ? 'planned' : 'paid',
     category: input.category.trim(), date,
     installment_group_id: count > 1 ? groupId : null,
     installment_current: count > 1 ? index + 1 : null,

@@ -133,6 +133,9 @@ export function TransactionsList() {
                                 ? ` · ${transaction.installment_current}/${transaction.installment_total}`
                                 : ''}
                             </span>
+                            <span className="transaction-mobile-meta">
+                              {transaction.category} · {formatDate(transaction.date)} · {isIncome ? 'Recebido' : statusLabels[transaction.status]}
+                            </span>
                           </span>
                         </span>
                       </th>

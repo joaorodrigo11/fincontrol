@@ -40,6 +40,15 @@ test('income on a current account is realized without inventing a card payment',
   assert.equal(rows[0].status,'paid')
   assert.equal(rows[0].installment_group_id,null)
 })
+
+test('single future income and cash expenses remain planned until their date',()=>{
+  for (const type of ['income','expense']) {
+    const row=buildTransactionRows({...input,type,payment_method:'pix',date:'2026-02-10',installments:1,bank_connection_id:null,bank_account_id:null},user,'2026-01-31',null)[0]
+    assert.equal(row.status,'planned')
+    assert.equal(effectiveTransactionStatus(row,'2026-02-09'),'planned')
+    assert.equal(effectiveTransactionStatus(row,'2026-02-10'),'paid')
+  }
+})
 test('saved installments update the correct wallet immediately and deletion restores the bank base',async()=>{
   const { projectWallet }=await import('../src/components/banking/wallet-summary.ts')
   const snapshot={accounts:[

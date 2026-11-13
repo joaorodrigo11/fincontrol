@@ -1,31 +1,43 @@
-import { lazy, Suspense, useState } from 'react'
-import { AlertCircle, Sparkles, House, Plus, Landmark, ListOrdered } from 'lucide-react'
+import { useState } from 'react'
+import { AlertCircle, Sparkles, House, Plus, Gauge, ListOrdered, Wallet } from 'lucide-react'
 import { useAuth } from './contexts/useAuth'
 import { useFinance } from './contexts/useFinance'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { AppHeader } from './components/dashboard/AppHeader'
-import { BudgetCards } from './components/dashboard/BudgetCards'
-import { NewTransactionModal } from './components/transactions/NewTransactionModal'
+import { TransactionEntry } from './components/transactions/TransactionEntry'
 import { TransactionsList } from './components/transactions/TransactionsList'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 import { Sidebar } from './components/dashboard/Sidebar'
 import { TransactionsSummary } from './components/dashboard/TransactionsSummary'
-import { Lorometro } from './components/dashboard/Lorometro'
-
-const ExpenseInsights = lazy(
-  () => import('./components/dashboard/ExpenseInsights').then((module) => ({ default: module.ExpenseInsights })),
-)
-const BankConnections = lazy(
-  () => import('./components/banking/BankConnections').then(module => ({ default: module.BankConnections })),
-)
+import { BudgetCards } from './components/dashboard/BudgetCards'
 
 function App() {
   const { user, loading: authLoading } = useAuth()
   const { month, setMonth, loading, error, refresh } = useFinance()
-  const [transactionModalOpen, setTransactionModalOpen] = useState(false)
+  const [valuesVisible, setValuesVisible] = useState(() => {
+    try { return localStorage.getItem('loro-wallet-private') !== 'true' } catch { return true }
+  })
 
   if (authLoading) return <LoadingScreen />
   if (!user) return <LoginScreen />
+
+  function focusEntry() {
+    const entry = document.getElementById('novo-lancamento')
+    entry?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+    entry?.querySelector<HTMLInputElement>('input[name="title"]')?.focus({ preventScroll: true })
+  }
+
+  function addIncome() {
+    document.querySelector<HTMLButtonElement>('#novo-lancamento [data-entry-type="income"]')?.click()
+    focusEntry()
+  }
+
+  function toggleValues() {
+    setValuesVisible(current => {
+      try { localStorage.setItem('loro-wallet-private', String(current)) } catch { /* Optional preference. */ }
+      return !current
+    })
+  }
 
   return (
     <div id="inicio" className="app-shell min-h-screen">
@@ -34,7 +46,6 @@ function App() {
       <AppHeader
         month={month}
         onMonthChange={setMonth}
-        onAddTransaction={() => setTransactionModalOpen(true)}
       />
       <main className="dashboard-main">
         <div className="dashboard-intro mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -79,22 +90,20 @@ function App() {
         )}
 
         <div className="dashboard-grid">
-          <BudgetCards />
-          <Lorometro />
-
-          <Suspense
-            fallback={
-              <div className="grid min-h-72 place-items-center rounded-3xl border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--muted)]">
-                Carregando gráficos...
+          <BudgetCards visible={valuesVisible} onToggle={toggleValues} onAddIncome={addIncome} />
+          <section id="novo-lancamento" className="transaction-entry-card dashboard-surface" aria-labelledby="entry-title">
+            <div className="transaction-entry-heading">
+              <div>
+                <p className="eyebrow">UM GASTO DE CADA VEZ</p>
+                <h2 id="entry-title">Novo lançamento</h2>
+                <p>Anote o valor, onde foi e como você pagou.</p>
               </div>
-            }
-          >
-            <ExpenseInsights variant="ranking" />
-            <TransactionsSummary />
-            <ExpenseInsights />
-            <TransactionsList />
-            <BankConnections key={user.id} />
-          </Suspense>
+            </div>
+            <TransactionEntry key={`${user.id}:${month}`} idPrefix="quick-entry" />
+          </section>
+          <TransactionsSummary visible={valuesVisible} onAddIncome={addIncome} />
+          <TransactionsList />
+
         </div>
         <footer className="mt-12 border-t border-[var(--border)] pt-5 text-center text-xs text-[var(--muted)]">
           Seus dados são privados e sincronizados com segurança.
@@ -104,17 +113,12 @@ function App() {
       <nav className="mobile-nav" aria-label="Navegação principal">
         <a href="#inicio" aria-label="Início"><House size={21} /><span>Início</span></a>
         <a href="#lancamentos" aria-label="Lançamentos"><ListOrdered size={21} /><span>Registros</span></a>
-        <button type="button" className="nav-add" aria-label="Novo lançamento" onClick={() => setTransactionModalOpen(true)}>
+        <button type="button" className="nav-add" aria-label="Novo lançamento" onClick={focusEntry}>
           <Plus size={27} />
         </button>
-        <a href="#bancos" aria-label="Bancos"><Landmark size={21} /><span>Bancos</span></a>
-        <a href="#analises" aria-label="Análises"><Sparkles size={21} /><span>Análises</span></a>
+        <a href="#resumo-lancamentos" aria-label="Seu mês em números"><Gauge size={21} /><span>Resumo</span></a>
+        <a href="#orcamento" aria-label="Minha carteira"><Wallet size={21} /><span>Carteira</span></a>
       </nav>
-      <NewTransactionModal
-        key={transactionModalOpen ? 'novo-lancamento' : 'fechado'}
-        open={transactionModalOpen}
-        onClose={() => setTransactionModalOpen(false)}
-      />
     </div>
   )
 }

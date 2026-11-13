@@ -23,3 +23,14 @@ test('does not call an unconfigured budget healthy or divide by zero', () => {
   assert.equal(getLorometro([expense(10)],'2026-11',0,0).stage,'danger')
   assert.equal(getLorometro([expense(10)],'2026-11',0,0).percentage,null)
 })
+
+test('unknown capacity leaves the meter neutral and the remaining amount unset while preserving monthly expenses', () => {
+  for (const [cash, credit] of [[null, null], [null, 500], [1000, null]]) {
+    const result = getLorometro([expense(200), expense(300, 'pending'), expense(100, 'planned')], '2026-11', cash, credit)
+    assert.equal(result.committed, 600)
+    assert.equal(result.capacity, null)
+    assert.equal(result.percentage, null)
+    assert.equal(result.remaining, null)
+    assert.equal(result.stage, 'unconfigured')
+  }
+})

@@ -1,19 +1,18 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, LogOut, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
 import { addMonths, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useAuth } from '../../contexts/useAuth'
+import { FreeProjectBanner } from './FreeProjectBanner'
 
 interface AppHeaderProps {
   month: string
   onMonthChange: (month: string) => void
-  onAddTransaction: () => void
 }
 
 export function AppHeader({
   month,
   onMonthChange,
-  onAddTransaction,
 }: AppHeaderProps) {
   const { user, signOut } = useAuth()
   const [signOutError, setSignOutError] = useState<string | null>(null)
@@ -62,15 +61,9 @@ export function AppHeader({
           </button>
         </div>
 
+        <FreeProjectBanner />
+
         <div className="header-actions">
-          <button
-            type="button"
-            onClick={onAddTransaction}
-            className="primary-button"
-          >
-            <Plus size={17} />
-            <span>Novo lançamento</span>
-          </button>
           <div className="hidden items-center gap-2.5 border-l border-[var(--border)] pl-4 md:flex">
             {avatar ? (
               <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
