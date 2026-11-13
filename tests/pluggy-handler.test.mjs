@@ -26,10 +26,10 @@ function fixture(options={}){
         return json({id:itemId,clientUserId:options.foreignItem?other:user,connector:{id:2,name:'Pluggy Bank',isSandbox:!options.realBank},status:options.processing?'UPDATING':'UPDATED'})
       }
       if(url.pathname==='/accounts')return json({results:[{id:'account',itemId,name:'Conta de teste',type:'BANK',currencyCode:'BRL',balance:1000}]})
-      if(url.pathname==='/transactions'){
+      if(url.pathname==='/v2/transactions'){
         if(options.failedPage&&url.searchParams.has('after'))return json({},500)
         const transaction={id:'external-1',accountId:'account',description:'Mercado',amount:-20,currencyCode:'BRL',date:'2026-11-12',type:'DEBIT',status:'POSTED'}
-        return json({results:[transaction,transaction],next:!url.searchParams.has('after')&&options.paginate?options.maliciousCursor?'https://attacker.example/transactions?after=1':'?after=1':null})
+        return json({results:[transaction,transaction],next:!url.searchParams.has('after')&&options.paginate?options.maliciousCursor?'https://attacker.example/transactions?after=1':'?after=1&accountId=wrong&dateFrom=1900-01-01&dateTo=2100-01-01':null})
       }
     }
     if(url.pathname.startsWith('/rest/v1/')){
@@ -89,7 +89,15 @@ test('synchronizes duplicate-free sandbox snapshots idempotently without changin
     assert.equal(response.status,200);const data=await response.json();assert.equal(data.count,1);assert.equal(data.snapshot.transactions[0].amount,-20)
   }
   assert.equal(f.snapshots.size,1)
-  assert(f.calls.filter(call=>call.url.pathname==='/transactions').every(call=>call.url.searchParams.get('accountId')==='account'))
+  const transactionCalls=f.calls.filter(call=>call.url.pathname==='/v2/transactions')
+  assert(transactionCalls.length>=4)
+  for(const call of transactionCalls){
+    assert.equal(call.url.searchParams.get('accountId'),'account')
+    assert.equal(call.url.searchParams.get('dateFrom'),'2026-11-01')
+    assert.equal(call.url.searchParams.get('dateTo'),'2026-11-30')
+    assert(!call.url.searchParams.has('from')&&!call.url.searchParams.has('to'))
+  }
+  assert(!f.calls.some(call=>call.url.origin==='https://api.pluggy.ai'&&call.url.pathname==='/transactions'))
 })
 test('never persists a partial sync or follows an external pagination URL',async()=>{
   for(const options of [{paginate:true,failedPage:true},{paginate:true,maliciousCursor:true},{processing:true}]){
@@ -104,4 +112,43 @@ test('missing provider secrets fail safely and expired sandbox items can be disc
   assert(!f.calls.some(call=>call.url.origin==='https://api.pluggy.ai'))
   const stale=fixture({missingItem:true});assert.equal((await stale.handler(bodyReq({action:'disconnect',connectionId}))).status,200)
   assert(stale.calls.some(call=>call.method==='DELETE'&&call.url.pathname.endsWith('bank_sandbox_connections')))
+})
+
+test('provider failures identify the stage without leaking provider responses or credentials',async()=>{
+  for(const [stage,status,expected] of [
+    ['/auth',401,'recusou as credenciais'],
+    ['/auth',403,'recusou as credenciais'],
+    ['/connect_token',403,'recusou o acesso'],
+    ['/connect_token',500,'Não foi possível consultar'],
+  ]){
+    const handler=createPluggyHandler(env,async(input)=>{
+      const url=new URL(input)
+      if(url.pathname==='/auth/v1/user')return json({id:user})
+      if(url.pathname===stage)return json({error:'private-provider-response',secret:'pluggy-secret'},status)
+      if(url.pathname==='/auth')return json({apiKey:'provider-api-secret'})
+      throw new Error('Unexpected request')
+    })
+    const response=await handler(bodyReq({action:'token'}))
+    assert.equal(response.status,502)
+    const text=await response.text()
+    assert(text.includes(expected))
+    for(const secret of ['private-provider-response','pluggy-secret','provider-api-secret'])assert(!text.includes(secret))
+  }
+})
+test('wallet loads latest balances and selected month only after verifying the connection owner',async()=>{
+  const f=fixture()
+  const response=await f.handler(bodyReq({action:'wallet',connectionId,month:'2026-11'}))
+  assert.equal(response.status,200)
+  assert.deepEqual(await response.json(),{balances:null,snapshot:null})
+  const queries=f.calls.filter(call=>call.url.pathname.endsWith('bank_sandbox_snapshots'))
+  assert.equal(queries.length,2)
+  for(const call of queries){
+    assert.equal(call.url.searchParams.get('user_id'),'eq.'+user)
+    assert.equal(call.url.searchParams.get('connection_id'),'eq.'+connectionId)
+  }
+  assert(queries.some(call=>call.url.searchParams.get('order')==='updated_at.desc'&&call.url.searchParams.get('limit')==='1'&&!call.url.searchParams.has('month')))
+  assert(queries.some(call=>call.url.searchParams.get('month')==='eq.2026-11'))
+  const foreign=fixture({noConnection:true})
+  assert.equal((await foreign.handler(bodyReq({action:'wallet',connectionId,month:'2026-11'}))).status,404)
+  assert(!foreign.calls.some(call=>call.url.pathname.endsWith('bank_sandbox_snapshots')))
 })

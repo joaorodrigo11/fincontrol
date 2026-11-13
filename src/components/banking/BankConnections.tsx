@@ -65,7 +65,7 @@ export function BankConnections() {
 
   return <section id="bancos" className="banking-module dashboard-surface" aria-labelledby="banking-title" aria-busy={Boolean(busy) || reading}>
     <div className="module-heading"><div><span className="eyebrow">SUAS CONEXÕES</span><h2 id="banking-title"><Landmark size={20} />Bancos</h2><p>Conecte uma instituição fictícia e consulte o mês selecionado.</p></div><span className="banking-mode"><FlaskConical size={14} />Ambiente de testes</span></div>
-    <p className="banking-test-note">Esta etapa usa apenas dados fictícios da Pluggy. Os dados ficam separados da carteira, do Lorômetro e dos lançamentos reais.</p>
+    <p className="banking-test-note">Esta etapa usa apenas dados fictícios da Pluggy. A carteira usa estes saldos e movimentos de teste. O Lorômetro e os lançamentos manuais continuam separados.</p>
     <div className="banking-actions">
       <button type="button" className="primary-button" disabled={Boolean(busy) || !configured || Boolean(token)} onClick={() => void run('connect', async () => {
         const result = await bankingApi<{ connectToken: string }>({ action: 'token' })

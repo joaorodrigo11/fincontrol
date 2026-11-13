@@ -14,6 +14,9 @@ export type MonthlyBudget = {
 export type Transaction = {
   id: string
   user_id: string
+  bank_connection_id: string | null
+  bank_account_id: string | null
+  bank_reflected: boolean
   installment_group_id: string | null
   title: string
   amount: number
@@ -55,6 +58,9 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
+          bank_connection_id?: string | null
+          bank_account_id?: string | null
+          bank_reflected?: boolean
           installment_group_id?: string | null
           title: string
           amount: number
@@ -70,6 +76,9 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
+          bank_connection_id?: string | null
+          bank_account_id?: string | null
+          bank_reflected?: boolean
           installment_group_id?: string | null
           title?: string
           amount?: number

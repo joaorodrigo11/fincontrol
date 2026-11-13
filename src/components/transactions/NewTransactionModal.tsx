@@ -2,15 +2,15 @@ import { useDialogFocus } from '../ui/useDialogFocus'
 import { motion, useReducedMotion } from 'framer-motion'
 import { CategoryIcon } from '../ui/CategoryIcon'
 import { useMemo, useState, type FormEvent } from 'react'
-import { CalendarDays, Check, ChevronDown, X } from 'lucide-react'
+import { CalendarDays, ChevronDown, X } from 'lucide-react'
 import { addMonths, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type {
   PaymentMethod,
-  TransactionStatus,
   TransactionType,
 } from '../../types/database'
 import { useFinance } from '../../contexts/useFinance'
+import { useBankWallet } from '../banking/useBankWallet'
 import { formatCurrencyBRL } from '../../utils/formatters'
 
 interface NewTransactionModalProps {
@@ -37,11 +37,12 @@ function todayDate() {
 export function NewTransactionModal({ open, onClose }: NewTransactionModalProps) {
   const reduced = useReducedMotion()
   const { createTransaction, saving, month } = useFinance()
+  const bank = useBankWallet(month, open)
+  const [accountChoice, setAccountChoice] = useState({ key: '', id: '' })
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState<TransactionType>('expense')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
-  const [status, setStatus] = useState<Exclude<TransactionStatus, 'pending'>>('paid')
   const [category, setCategory] = useState('Alimentação')
   const [date, setDate] = useState(todayDate)
   const [installments, setInstallments] = useState('1')
@@ -53,7 +54,13 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
 
   const dialogRef = useDialogFocus(open, onClose, saving)
 
-  const installmentCount = Math.max(1, Number(installments) || 1)
+  const eligibleAccounts = bank.accounts.filter(account => account.currencyCode === 'BRL' && account.type === (paymentMethod === 'credit_card' ? 'CREDIT' : 'BANK'))
+  const accountKey = bank.selected + ':' + paymentMethod
+  const chosenAccount = accountChoice.key === accountKey && eligibleAccounts.some(account => account.id === accountChoice.id)
+    ? accountChoice.id : eligibleAccounts.length === 1 ? eligibleAccounts[0].id : ''
+  const needsAccount = paymentMethod !== 'cash'
+  const bankUnavailable = needsAccount && (bank.loading || Boolean(bank.error))
+  const installmentCount = paymentMethod === 'credit_card' && type === 'expense' ? Math.max(1, Number(installments) || 1) : 1
   const selectedRepeatMonths = repeatMonths.filter((item) => item !== date.slice(0, 7))
   const installmentValue = useMemo(() => {
     const value = Number(amount.replace(',', '.'))
@@ -74,22 +81,19 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
 
     try {
       const amountValue = Number(amount.replace(',', '.'))
-      const count = Number(installments)
+      const count = installmentCount
+      if (bankUnavailable) throw new Error(bank.error ?? 'Aguarde a consulta das contas bancárias.')
+      if (needsAccount && eligibleAccounts.length && !chosenAccount) throw new Error('Escolha a conta ou o cartão do lançamento.')
       if (repeatEnabled && type === 'expense' && selectedRepeatMonths.length === 0) {
         throw new RangeError('Adicione pelo menos um outro mês para repetir o gasto.')
       }
-      const finalStatus: TransactionStatus =
-        status === 'planned'
-          ? 'planned'
-          : paymentMethod === 'credit_card'
-            ? 'pending'
-            : 'paid'
       const created = await createTransaction({
         title,
         amount: amountValue,
         type,
         payment_method: paymentMethod,
-        status: finalStatus,
+        bank_connection_id: needsAccount && chosenAccount ? bank.selected : null,
+        bank_account_id: needsAccount && chosenAccount ? chosenAccount : null,
         category,
         date,
         installments: type === 'expense' ? count : 1,
@@ -247,12 +251,15 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
               <span className="relative mt-2 block">
                 <select
                   value={paymentMethod}
-                  onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+                  onChange={(event) => {
+                    setPaymentMethod(event.target.value as PaymentMethod)
+                    setInstallments('1')
+                  }}
                   className="h-12 w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 pr-10 font-normal text-[var(--text)] outline-none focus:border-[var(--border)] focus:ring-4 focus:ring-[var(--accent)]"
                 >
                   <option value="pix">Pix</option>
                   <option value="debit">Débito</option>
-                  <option value="credit_card">Cartão de crédito</option>
+                  {type === 'expense' && <option value="credit_card">Cartão de crédito</option>}
                   <option value="cash">Dinheiro</option>
                 </select>
                 <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
@@ -260,7 +267,23 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
             </label>
           </div>
 
-          {type === 'expense' && (
+          {needsAccount && <div className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+            {bank.connections.length > 1 && <label className="block text-sm font-semibold">Instituição
+              <select value={bank.selected} disabled={bank.loading || saving} onChange={event => bank.select(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">{bank.connections.map(connection => <option key={connection.id} value={connection.id}>{connection.institution_name}</option>)}</select>
+            </label>}
+            {bank.loading ? <p role="status" className="text-sm text-[var(--muted)]">Consultando contas e cartões…</p> : bank.error ? <div role="alert"><p>{bank.error}</p><button type="button" className="banking-secondary" onClick={bank.refresh}>Tentar novamente</button></div>
+              : eligibleAccounts.length ? <label className="block text-sm font-semibold">{paymentMethod === 'credit_card' ? 'Cartão de crédito' : 'Conta corrente'}{bank.connections.length === 1 ? ' · ' + bank.connections[0].institution_name : ''}
+                <select required value={chosenAccount} disabled={saving} onChange={event => setAccountChoice({key:accountKey,id:event.target.value})} className="mt-2 h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
+                  <option value="" disabled>Escolha uma opção</option>
+                  {eligibleAccounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
+                </select>
+              </label> : <p className="text-sm text-[var(--muted)]">{bank.connections.length ? (paymentMethod === 'credit_card' ? 'Esta instituição não informou cartão de crédito.' : 'Esta instituição não informou conta corrente.') : 'Nenhuma instituição conectada.'} O lançamento ficará sem vínculo bancário.</p>}
+          </div>}
+          <p className="text-xs leading-5 text-[var(--muted)]">{paymentMethod === 'credit_card'
+            ? 'A compra compromete o limite do cartão. As parcelas deste mês ficam na fatura e as dos próximos meses ficam previstas.'
+            : paymentMethod === 'cash' ? 'Lançamento realizado em dinheiro; não altera o saldo bancário.'
+            : type === 'income' ? 'Entrada realizada na conta escolhida.' : 'Pix e débito são registrados como realizados e descontados da conta escolhida.'}</p>
+          {type === 'expense' && paymentMethod === 'credit_card' && (
             <div className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -321,7 +344,7 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
                 Repetir este gasto em outros meses
               </label>
               <p className="text-xs leading-5 text-[var(--muted)]">
-                O valor integral será lançado em cada mês escolhido, com a mesma categoria, forma de pagamento e situação. Para dividir uma compra, use Parcelamento.
+                O valor integral será lançado em cada mês escolhido, com a mesma categoria e forma de pagamento. As repetições futuras ficam previstas até a data escolhida. Para dividir uma compra, use Parcelamento.
               </p>
               {repeatEnabled && (
                 <>
@@ -353,35 +376,7 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
             </fieldset>
           )}
 
-          <fieldset>
-            <legend className="mb-2 text-sm font-semibold text-[var(--text)]">Situação</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                ['paid', 'Já realizado'],
-                ['planned', 'Gasto previsto'],
-              ] as const).map(([value, label]) => (
-                <button
-                  type="button"
-                  key={value}
-                  onClick={() => setStatus(value)}
-                  aria-pressed={status === value}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-medium transition ${
-                    status === value
-                      ? 'border-[var(--border)] bg-[var(--soft)] text-[var(--text)]'
-                      : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--soft)]'
-                  }`}
-                >
-                  {status === value && <Check size={15} />}
-                  {label}
-                </button>
-              ))}
-            </div>
-            {paymentMethod === 'credit_card' && status === 'paid' && (
-              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-                Compras no cartão serão registradas como compromisso da fatura.
-              </p>
-            )}
-          </fieldset>
+
 
           {error && !(repeatEnabled && type === 'expense') && (
             <p role="alert" className="rounded-xl border border-[var(--expense)]/30 bg-[var(--error-soft)] px-4 py-3 text-sm text-[var(--expense)]">
@@ -405,7 +400,7 @@ export function NewTransactionModal({ open, onClose }: NewTransactionModalProps)
             </button>
             <button
               type="submit"
-              disabled={saving || Boolean(success)}
+              disabled={saving || Boolean(success) || bankUnavailable}
               className="h-12 flex-1 rounded-xl bg-[var(--accent)] text-sm font-semibold text-white hover:bg-[var(--accent)] disabled:cursor-wait disabled:opacity-60"
             >
               {saving ? 'Salvando...' : 'Salvar lançamento'}

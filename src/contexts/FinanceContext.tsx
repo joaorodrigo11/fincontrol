@@ -19,7 +19,9 @@ import { useAuth } from './useAuth'
 import { FinanceContext } from './finance-context'
 import { getSupabaseClient } from '../lib/supabaseClient'
 import { getCurrentMonth } from '../utils/dates'
-import { getRepeatDates } from '../utils/repeatDates'
+import { buildTransactionRows, effectiveTransactionStatus } from '../utils/transactionRows'
+import { bankingApi } from '../components/banking/banking-api'
+import type { BankSnapshot } from '../components/banking/banking-api'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Ocorreu um erro ao acessar os dados financeiros.'
@@ -72,30 +74,6 @@ function calculateTotals(
     cashAlert: alertFor(cashExpenses, cashBase),
     creditAlert: alertFor(creditUsed, creditLimit),
   }
-}
-
-function splitAmountIntoCents(amount: number, installments: number): number[] {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new RangeError('O valor da transação deve ser maior que zero.')
-  }
-  if (!Number.isSafeInteger(installments) || installments < 1) {
-    throw new RangeError('O número de parcelas deve ser um inteiro positivo.')
-  }
-
-  const totalCents = Math.round((amount + Number.EPSILON) * 100)
-  if (totalCents < installments) {
-    throw new RangeError('O valor não permite dividir parcelas de pelo menos R$ 0,01.')
-  }
-  if (!Number.isSafeInteger(totalCents)) {
-    throw new RangeError('O valor informado está fora do limite permitido.')
-  }
-
-  const baseCents = Math.floor(totalCents / installments)
-  const remainder = totalCents % installments
-  return Array.from(
-    { length: installments },
-    (_, index) => baseCents + (index < remainder ? 1 : 0),
-  )
 }
 
 export function FinanceProvider({ children }: PropsWithChildren) {
@@ -154,11 +132,14 @@ export function FinanceProvider({ children }: PropsWithChildren) {
       if (transactionResult.error) throw transactionResult.error
       if (currentRequestId !== requestId.current) return
       setBudget(budgetResult.data)
-      setTransactions(transactionResult.data)
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+      setTransactions(transactionResult.data.map(row => ({ ...row, status: effectiveTransactionStatus(row, today) })))
       setLoadedKey(currentKey)
     } catch (loadError) {
       if (currentRequestId === requestId.current) {
         setError(errorMessage(loadError))
+        setBudget(null)
+        setTransactions([])
         setLoadedKey(currentKey)
       }
       throw loadError
@@ -234,60 +215,30 @@ export function FinanceProvider({ children }: PropsWithChildren) {
   const createTransaction = useCallback(
     async (input: NewTransaction) => {
       if (!user) throw new Error('É necessário entrar para registrar uma transação.')
-      if (!input.title.trim() || !input.category.trim()) {
-        throw new RangeError('Descrição e categoria são obrigatórias.')
-      }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
-        throw new RangeError('Data inválida. Use o formato YYYY-MM-DD.')
-      }
-
-      const installments = input.installments ?? 1
-      const cents = splitAmountIntoCents(input.amount, installments)
-      const transactionDate = parseISO(input.date)
-      if (format(transactionDate, 'yyyy-MM-dd') !== input.date) {
-        throw new RangeError('A data informada não existe.')
-      }
-      const repeatMonths = input.repeat_months ?? []
-      if (repeatMonths.length && (installments > 1 || input.type !== 'expense')) {
-        throw new RangeError('A repetição entre meses está disponível para despesas sem parcelamento.')
-      }
-      const repeatDates = repeatMonths.length ? getRepeatDates(input.date, repeatMonths) : null
-      if (installments > 1 && !globalThis.crypto?.randomUUID) {
-        throw new Error('Este navegador não oferece suporte à geração segura de identificadores.')
-      }
-
-      const groupId = installments > 1 ? globalThis.crypto.randomUUID() : null
-      const dates = repeatDates ?? cents.map((_, index) => format(addMonths(transactionDate, index), 'yyyy-MM-dd'))
-      const rows = dates.map((date, index) => {
-        const installmentCents = repeatDates ? cents[0] : cents[index]
-        const title =
-          installments > 1
-            ? `${input.title.trim()} (${index + 1}/${installments})`
-            : input.title.trim()
-        return {
-          user_id: user.id,
-          installment_group_id: groupId,
-          title,
-          amount: installmentCents / 100,
-          type: input.type,
-          payment_method: input.payment_method,
-          status: input.status,
-          category: input.category.trim(),
-          date,
-          installment_current: installments > 1 ? index + 1 : null,
-          installment_total: installments > 1 ? installments : null,
-        }
-      })
-
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+      const groupId = (input.installments ?? 1) > 1 ? globalThis.crypto.randomUUID() : null
+      const rows = buildTransactionRows(input, user.id, today, groupId)
       setSaving(true)
       setError(null)
       try {
+        if (input.bank_connection_id) {
+          const { balances } = await bankingApi<{ balances: BankSnapshot | null }>({
+            action: 'wallet', connectionId: input.bank_connection_id, month: input.date.slice(0, 7),
+          })
+          const account = balances?.accounts.find(row => row.id === input.bank_account_id)
+          const expectedType = input.payment_method === 'credit_card' ? 'CREDIT' : 'BANK'
+          if (!account || account.type !== expectedType || account.currencyCode !== 'BRL') {
+            throw new Error('A conta escolhida não está disponível para esta forma de pagamento. Atualize os bancos e tente novamente.')
+          }
+        }
         const { data, error: insertError } = await getSupabaseClient()
           .from('transactions')
           .insert(rows)
           .select()
         if (insertError) throw insertError
-        await refresh()
+        setTransactions(current => [...new Map([...current, ...data].map(row => [row.id, row])).values()])
+        window.dispatchEvent(new Event('loro-bank-updated'))
+        await refresh().catch(() => undefined)
         return data
       } catch (insertError) {
         setError(errorMessage(insertError))
@@ -299,6 +250,25 @@ export function FinanceProvider({ children }: PropsWithChildren) {
     [refresh, user],
   )
 
+  const setBankReflected = useCallback(async (transaction: Transaction, reflected: boolean) => {
+    if (!user || !transaction.bank_connection_id) throw new Error('Este lançamento não está vinculado a uma conta bancária.')
+    setSaving(true)
+    setError(null)
+    try {
+      let query = getSupabaseClient().from('transactions').update({ bank_reflected: reflected })
+        .eq('user_id', user.id).eq('bank_connection_id', transaction.bank_connection_id)
+      query = transaction.installment_group_id
+        ? query.eq('installment_group_id', transaction.installment_group_id)
+        : query.eq('id', transaction.id)
+      const { error: updateError } = await query
+      if (updateError) throw updateError
+      window.dispatchEvent(new Event('loro-bank-updated'))
+      await refresh().catch(() => undefined)
+    } catch (updateError) {
+      setError(errorMessage(updateError))
+      throw updateError
+    } finally { setSaving(false) }
+  }, [user, refresh])
   const deleteTransaction = useCallback(
     async (
       transaction: Transaction,
@@ -326,7 +296,11 @@ export function FinanceProvider({ children }: PropsWithChildren) {
 
         const { error: deleteError } = await query
         if (deleteError) throw deleteError
-        await refresh()
+        setTransactions(current => current.filter(row => scope === 'this_and_future' && transaction.installment_group_id
+          ? row.installment_group_id !== transaction.installment_group_id || row.date < transaction.date
+          : row.id !== transaction.id))
+        window.dispatchEvent(new Event('loro-bank-updated'))
+        await refresh().catch(() => undefined)
       } catch (deleteError) {
         setError(errorMessage(deleteError))
         throw deleteError
@@ -371,6 +345,7 @@ export function FinanceProvider({ children }: PropsWithChildren) {
       refresh,
       saveBudget,
       createTransaction,
+      setBankReflected,
       deleteTransaction,
       ...totals,
     }),
@@ -389,6 +364,7 @@ export function FinanceProvider({ children }: PropsWithChildren) {
       refresh,
       saveBudget,
       createTransaction,
+      setBankReflected,
       deleteTransaction,
       totals,
     ],

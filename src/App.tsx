@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { AlertCircle, Sparkles, House, Plus, ChartNoAxesCombined, ListOrdered } from 'lucide-react'
+import { AlertCircle, Sparkles, House, Plus, Landmark, ListOrdered } from 'lucide-react'
 import { useAuth } from './contexts/useAuth'
 import { useFinance } from './contexts/useFinance'
 import { LoginScreen } from './components/auth/LoginScreen'
@@ -14,9 +14,6 @@ import { Lorometro } from './components/dashboard/Lorometro'
 
 const ExpenseInsights = lazy(
   () => import('./components/dashboard/ExpenseInsights').then((module) => ({ default: module.ExpenseInsights })),
-)
-const MonthlySpendingDashboard = lazy(
-  () => import('./components/dashboard/MonthlySpendingDashboard').then((module) => ({ default: module.MonthlySpendingDashboard })),
 )
 const BankConnections = lazy(
   () => import('./components/banking/BankConnections').then(module => ({ default: module.BankConnections })),
@@ -94,7 +91,6 @@ function App() {
           >
             <ExpenseInsights variant="ranking" />
             <TransactionsSummary />
-            <MonthlySpendingDashboard />
             <ExpenseInsights />
             <TransactionsList />
             <BankConnections key={user.id} />
@@ -111,7 +107,7 @@ function App() {
         <button type="button" className="nav-add" aria-label="Novo lançamento" onClick={() => setTransactionModalOpen(true)}>
           <Plus size={27} />
         </button>
-        <a href="#previsao-mensal" aria-label="Gastos previstos do mês"><ChartNoAxesCombined size={21} /><span>Cartão e Pix</span></a>
+        <a href="#bancos" aria-label="Bancos"><Landmark size={21} /><span>Bancos</span></a>
         <a href="#analises" aria-label="Análises"><Sparkles size={21} /><span>Análises</span></a>
       </nav>
       <NewTransactionModal

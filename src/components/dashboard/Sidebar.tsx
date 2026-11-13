@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, ChartPie, Gauge, House, Landmark, ListOrdered, WalletCards } from 'lucide-react'
+import { ArrowUpRight, ChartPie, Gauge, House, Landmark, ListOrdered } from 'lucide-react'
 
 const sections = [
   { id: 'orcamento', label: 'Visão geral', icon: House },
   { id: 'lorometro', label: 'Lorômetro', icon: Gauge },
-  { id: 'previsao-mensal', label: 'Cartão e Pix', icon: WalletCards },
   { id: 'analises', label: 'Categorias', icon: ChartPie },
   { id: 'lancamentos', label: 'Lançamentos', icon: ListOrdered },
   { id: 'bancos', label: 'Bancos', icon: Landmark },
@@ -29,7 +28,7 @@ export function Sidebar() {
     <nav aria-label="Seções do painel">
       {sections.map(({ id, label, icon: Icon }) => <a key={id} href={`#${id}`} aria-current={active === id ? 'location' : undefined} onClick={() => setActive(id)}><Icon size={19} /><span>{label}</span>{active === id && <span className="sidebar-dot" />}</a>)}
     </nav>
-    <div className="sidebar-note"><img src="/art/wallet.svg" alt="" width="150" height="100" /><strong>Mais clareza.<br />Mais tranquilidade.</strong><p>Um mês de cada vez, no seu ritmo.</p><a href="#previsao-mensal">Veja os gastos do mês <ArrowUpRight size={15} /></a></div>
+    <div className="sidebar-note"><img src="/art/wallet.svg" alt="" width="150" height="100" /><strong>Mais clareza.<br />Mais tranquilidade.</strong><p>Um mês de cada vez, no seu ritmo.</p><a href="#orcamento">Veja sua carteira <ArrowUpRight size={15} /></a></div>
     <p className="sidebar-bottom">Seu dinheiro, suas escolhas.</p>
   </aside>
 }

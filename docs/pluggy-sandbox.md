@@ -2,7 +2,7 @@
 
 Esta implementação conecta **somente o Sandbox (conector 2)** da Pluggy. A área **Bancos** permite criar uma conexão fictícia, consultar contas, buscar transações do mês selecionado, consultar a última sincronização e desconectar. A sincronização é manual, pelo botão **Sincronizar mês**. Não há polling contínuo, webhook ou agendamento nesta etapa.
 
-As prévias ficam nas tabelas `bank_sandbox_connections` e `bank_sandbox_snapshots`. **Nenhuma transação fictícia é inserida em `transactions` e nenhum orçamento é alterado.** O Lorômetro, a carteira, os cálculos e os lançamentos reais continuam usando os contextos originais. Dados reais, conciliação de lançamentos manuais, pagamentos de fatura e importação definitiva exigem uma etapa posterior, após habilitação e testes com o provedor.
+As prévias ficam nas tabelas `bank_sandbox_connections` e `bank_sandbox_snapshots`. **Nenhuma transação fictícia é inserida em `transactions` e nenhum orçamento é alterado.** A carteira exibe os saldos do snapshot e os movimentos bancários do mês, identificados como Sandbox, no lugar do formulário de orçamento manual. O Lorômetro e os lançamentos manuais continuam usando os contextos originais. Conexões com bancos reais, pagamentos de fatura e importação definitiva exigem uma etapa posterior, após habilitação e testes com o provedor.
 
 ## 1. Credenciais e origens permitidas
 
@@ -93,3 +93,24 @@ Os testes automatizados usam respostas simuladas e verificam isolamento, autenti
 - [Transações e convenção de sinais](https://v2.docs.pluggy.ai/en/docs/products/transactions)
 - [Secrets das Edge Functions](https://supabase.com/docs/guides/functions/secrets)
 - [Autenticação das Edge Functions](https://supabase.com/docs/guides/functions/auth)
+
+## Carteira conectada
+
+A carteira usa os snapshots de teste da instituição escolhida, sem escrever em monthly_budgets ou transactions. Ela mantém a opção de ocultar valores e separa compras no cartão, Pix que saiu, Pix pendente/futuro e outras saídas. A direção DEBIT/CREDIT vem da Pluggy; pagamentos de fatura e créditos/estornos não entram no total de compras. Os valores das compras são exibidos como magnitude positiva.
+
+Pix é identificado por paymentData.paymentMethod ou operationType, nunca pela descrição. Snapshots anteriores precisam ser sincronizados novamente para obter esses campos e os limites disponíveis do cartão. Nenhum documento ou identidade das contrapartes é armazenado por essa mudança.
+
+Os saldos são atuais na data da sincronização, mesmo ao consultar movimentos de um mês passado. Não são somados às entradas nem descontados novamente pelas saídas confirmadas. Valores de moedas diferentes de BRL não são agregados. Limite não retornado pelo banco aparece como “Não informado”. A previsão de Pix inclui somente movimentos pendentes ou futuros efetivamente retornados pelo banco; não infere recorrências.
+
+A consulta de transações usa /v2/transactions com dateFrom/dateTo e paginação por cursor, preservando conta, mês e domínio em todas as páginas.
+## Lançamentos e saldo estimado da carteira
+
+A migração 202611120002_wallet_transactions.sql acrescenta vínculo de instituição/conta e a confirmação bank_reflected aos lançamentos manuais. O vínculo composto com user_id impede associar a conexão de outro usuário; a exclusão de uma conexão preserva o lançamento e remove seu vínculo. Registros antigos não são associados automaticamente.
+
+No novo lançamento, Pix e débito usam uma conta BANK em BRL; crédito usa uma conta CREDIT. Sem o produto informado pela instituição, a tela informa a ausência e permite apenas um lançamento sem vínculo, sem inventar saldo ou limite. Dinheiro em espécie não altera contas bancárias.
+
+A situação é inferida: saída de conta é realizada; compras no crédito ficam na fatura do mês, com parcelas futuras previstas. A divisão em até 24 parcelas preserva os centavos e o dia original quando possível. O valor total ainda não refletido de uma compra parcelada compromete o limite imediatamente. Repetições futuras independentes não comprometem o limite antes de seu mês.
+
+A carteira consulta o snapshot mais recente para os saldos e o snapshot do mês escolhido para o extrato. Aplica os lançamentos vinculados de todos os meses, incluindo parcelas futuras, por conta e instituição. Ao salvar ou excluir, a carteira recalcula sem precisar sincronizar a Pluggy novamente.
+
+A conciliação é explícita: quando um lançamento já aparecer no extrato, marque “Já consta no banco”. Para compras parceladas, a confirmação vale para o grupo inteiro. Essa confirmação remove o ajuste manual, pois o saldo bancário já deve refletir a compra. Não há correspondência automática por descrição/valor. Sincronizar o banco não apaga lançamentos nem suas confirmações.

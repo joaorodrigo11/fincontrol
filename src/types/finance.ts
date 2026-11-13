@@ -2,7 +2,6 @@ import type {
   MonthlyBudget,
   PaymentMethod,
   Transaction,
-  TransactionStatus,
   TransactionType,
 } from './database'
 
@@ -16,11 +15,12 @@ export interface NewTransaction {
   amount: number
   type: TransactionType
   payment_method: PaymentMethod
-  status: TransactionStatus
   category: string
   date: string
   installments?: number
   repeat_months?: string[]
+  bank_connection_id?: string | null
+  bank_account_id?: string | null
 }
 
 export type TransactionDeleteScope = 'single' | 'this_and_future'
@@ -50,6 +50,7 @@ export interface FinanceState extends FinanceTotals {
   refresh: () => Promise<void>
   saveBudget: (values: BudgetValues) => Promise<void>
   createTransaction: (transaction: NewTransaction) => Promise<Transaction[]>
+  setBankReflected: (transaction: Transaction, reflected: boolean) => Promise<void>
   deleteTransaction: (
     transaction: Transaction,
     scope?: TransactionDeleteScope,

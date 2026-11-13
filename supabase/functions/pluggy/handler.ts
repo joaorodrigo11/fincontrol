@@ -24,6 +24,15 @@ export function createPluggyHandler(env: Env, request: typeof fetch = fetch) {
     if (url.origin !== PLUGGY) throw new PublicError('Endereço da instituição inválido.', 502)
     const response = await request(url, { ...init, redirect: 'error', headers: { 'Content-Type': 'application/json', ...(authenticate ? { 'X-API-KEY': apiKey } : {}) }, signal: AbortSignal.timeout(15000) })
     if (!response.ok) {
+      // Only record a fixed endpoint category and HTTP status; never provider bodies or credentials.
+      const stage = url.pathname === '/auth' ? 'auth' : url.pathname === '/connect_token' ? 'connect_token' : 'data'
+      console.warn('pluggy_request_failed', JSON.stringify({ stage, status: response.status }))
+      if (url.pathname === '/auth' && (response.status === 400 || response.status === 401 || response.status === 403)) {
+        throw new PublicError('A Pluggy recusou as credenciais. Confira PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET do mesmo aplicativo no Supabase.', 502)
+      }
+      if (response.status === 403) {
+        throw new PublicError('A Pluggy recusou o acesso a este recurso. Confira as permissões e a habilitação do Sandbox no aplicativo da Pluggy.', 502)
+      }
       if (response.status === 401) { apiKey = ''; apiExpiresAt = 0 }
       if (response.status === 404) throw new PublicError('Conexão não encontrada na Pluggy. Conecte a instituição de teste novamente.', 404)
       throw new PublicError(response.status === 429 ? 'A Pluggy limitou as consultas. Aguarde um pouco antes de tentar novamente.' : 'Não foi possível consultar a Pluggy. Confira a conexão e tente novamente.', response.status === 429 ? 429 : 502)
@@ -109,6 +118,15 @@ export function createPluggyHandler(env: Env, request: typeof fetch = fetch) {
         const connection = existing[0] ?? (await db('bank_sandbox_connections', { method: 'POST', body: JSON.stringify({ user_id: userId, item_id: item.id, institution_name: String(item.connector.name ?? 'Banco de teste').slice(0, 120) }) }) as Connection[])[0]
         return json({ connectionId: connection.id })
       }
+      if (body.action === 'wallet') {
+        const connection = await ownedConnection(body.connectionId, userId)
+        const range = monthRange(body.month)
+        const [latest, monthly] = await Promise.all([
+          db(`bank_sandbox_snapshots?connection_id=eq.${connection.id}&user_id=eq.${userId}&select=accounts,transactions,updated_at&order=updated_at.desc&limit=1`) as Promise<unknown[]>,
+          db(`bank_sandbox_snapshots?connection_id=eq.${connection.id}&user_id=eq.${userId}&month=eq.${range.month}&select=accounts,transactions,updated_at`) as Promise<unknown[]>,
+        ])
+        return json({ balances: latest[0] ?? null, snapshot: monthly[0] ?? null })
+      }
       if (body.action === 'snapshot') {
         const connection = await ownedConnection(body.connectionId, userId)
         const range = monthRange(body.month)
@@ -130,8 +148,13 @@ export function createPluggyHandler(env: Env, request: typeof fetch = fetch) {
           if (row.type !== 'BANK' && row.type !== 'CREDIT') continue
           if (typeof row.balance !== 'number' || !Number.isFinite(row.balance) || typeof row.currencyCode !== 'string' || !/^[A-Z]{3}$/.test(row.currencyCode)) throw new PublicError('Saldo ou moeda da conta inválidos.', 502)
           const account: BankAccount = { id: row.id, name: String(row.name ?? 'Conta de teste').slice(0, 120), type: row.type, balance: row.balance, currencyCode: row.currencyCode }
+          if (row.type === 'CREDIT' && row.creditData && typeof row.creditData === 'object') {
+            const credit = row.creditData as Record<string, unknown>
+            account.availableCreditLimit = typeof credit.availableCreditLimit === 'number' && Number.isFinite(credit.availableCreditLimit) ? credit.availableCreditLimit : null
+            account.creditLimit = typeof credit.creditLimit === 'number' && Number.isFinite(credit.creditLimit) ? credit.creditLimit : null
+          }
           accounts.push(account)
-          const rows = await pages(`/transactions?accountId=${encodeURIComponent(account.id)}&from=${range.from}&to=${range.to}&pageSize=500`, account.id)
+          const rows = await pages(`/v2/transactions?accountId=${encodeURIComponent(account.id)}&dateFrom=${range.from}&dateTo=${range.to}`, account.id)
           for (const transaction of rows) {
             const normalized = normalizeTransaction(transaction, account, range.month)
             if (normalized) unique.set(`${account.id}:${normalized.id}`, normalized)

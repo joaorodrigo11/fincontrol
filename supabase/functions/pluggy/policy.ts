@@ -32,10 +32,14 @@ export interface BankAccount {
   name: string
   type: string
   currencyCode: string
+  availableCreditLimit?: number | null
+  creditLimit?: number | null
   balance: number
 }
 
 export interface BankTransaction {
+  paymentMethod?: string | null
+  operationType?: string | null
   id: string
   accountId: string
   accountName: string
@@ -59,6 +63,9 @@ export function normalizeTransaction(row: Record<string, unknown>, account: Bank
   const currencyCode = typeof row.currencyCode === 'string' ? row.currencyCode : account.currencyCode
   if (!/^[A-Z]{3}$/.test(currencyCode)) throw new PublicError('A instituição retornou uma moeda inválida.', 502)
   return {
+    paymentMethod: row.paymentData && typeof row.paymentData === 'object' && typeof (row.paymentData as Record<string, unknown>).paymentMethod === 'string'
+      ? String((row.paymentData as Record<string, unknown>).paymentMethod).slice(0, 40).toUpperCase() : null,
+    operationType: typeof row.operationType === 'string' ? row.operationType.slice(0, 80).toUpperCase() : null,
     id: row.id, accountId: account.id, accountName: account.name,
     description: String(row.description ?? 'Transação').slice(0, 240), amount: row.amount,
     currencyCode, date, type: String(row.type ?? '').slice(0, 20), status: String(row.status ?? '').slice(0, 30),

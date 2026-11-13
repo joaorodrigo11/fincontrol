@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -95,7 +95,7 @@ a { text-underline-offset: 4px; }
 #orcamento { grid-column: 1 / 3; grid-row: 1; }
 #ranking { grid-column: 3; grid-row: 1; }
 #resumo-lancamentos { grid-column: 3; grid-row: 2; }
-#previsao-mensal { grid-column: 1 / 3; grid-row: 2; }
+
 #analises { grid-column: 1 / -1; grid-row: 3; }
 #lancamentos { grid-column: 1 / -1; grid-row: 4; }
 .dashboard-surface, .insights-content>article, #lancamentos>div:nth-child(2) { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
@@ -157,23 +157,7 @@ a { text-underline-offset: 4px; }
 .module-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 20px; font-size: 10px; font-weight: 500; text-decoration: none; color: var(--accent); }
 .summary-empty { text-align: center; margin: 20px auto; color: var(--muted); font-size: 11px; }
 .summary-empty img { margin: auto; }
-.monthly-spending-cards { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--gap); }
-.monthly-spending-card { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); min-width: 0; }
-.monthly-spending-art { position:relative; display:grid; place-items:center; height:224px; padding:22px; background:var(--brand-tint); overflow:hidden; }
-.payment-mascot { position:relative; height:180px; animation:payment-float 8s ease-in-out infinite; }
-.monthly-spending-art img { position:absolute; max-width:none; object-fit:contain; }
-.monthly-spending-pix .monthly-spending-art { background:var(--sun-tint); }
-.monthly-spending-pix .payment-mascot { animation-delay: -4s; }
-.monthly-spending-content { padding: var(--space); }
-.monthly-spending-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.monthly-spending-heading h3 { font-size: 12px; font-weight: 600; }
-.monthly-spending-heading>span { font-size: 6px; letter-spacing: .12em; color: var(--accent); }
-.monthly-spending-value { font-size: clamp(24px,2.3vw,34px); letter-spacing: -.045em; margin-top: 12px; overflow-wrap: anywhere; }
-.monthly-spending-caption { font-size: 9px; line-height: 1.6; margin-top: 4px; color: var(--muted); }
-.monthly-spending-details { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
-.monthly-spending-details dt { font-size: 8px; color: var(--muted); }
-.monthly-spending-details dd { font-size: 11px; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-#previsao-mensal>p { font-size: 9px; }
+
 #lancamentos h2 { margin-bottom: 4px; }
 #lancamentos table { font-size: 11px; }
 #lancamentos table button { min-width: 44px; min-height: 44px; }
@@ -207,7 +191,6 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
 @keyframes drift { to { transform: translate(24px,18px); } }
 @keyframes reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: rotate(-30deg); } }
-@keyframes payment-float { 50% { transform: scale(1.035) translateY(-3px); } }
 @media(min-width:1700px) { :root { --sidebar-width: 232px; } .dashboard-main { padding: 32px; } }
 @media(max-width:1199px) {
   :root { --sidebar-width: 184px; }
@@ -222,7 +205,7 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
   #orcamento { grid-column: 1 / -1; grid-row: 1; }
   #ranking { grid-column: 1; grid-row: 3; }
   #resumo-lancamentos { grid-column: 2; grid-row: 3; }
-  #previsao-mensal { grid-column: 1 / -1; grid-row: 2; }
+
   #analises { grid-column: 1 / -1; grid-row: 4; }
   #lancamentos { grid-column: 1 / -1; grid-row: 5; }
   .categories-module .expense-chart-layout { grid-template-columns: minmax(160px,.85fr) 1fr; }
@@ -244,7 +227,7 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
   .dashboard-intro p:last-child { font-size: 11px; }
   .dashboard-grid { display: flex; flex-direction: column; gap: var(--gap); }
   .dashboard-grid>section { width: 100%; }
-  #orcamento { order: 0; } #ranking { order: 2; } #resumo-lancamentos { order: 3; } #previsao-mensal { order: 1; } #analises { order: 5; } #lancamentos { order: 6; }
+  #orcamento { order: 0; } #ranking { order: 2; } #resumo-lancamentos { order: 3; } #analises { order: 5; } #lancamentos { order: 6; }
   .wallet-heading { margin-bottom: 10px; min-height: 42px; }
   .wallet-decoration img { width: 74px; height: 46px; }
   .activity-rings { width: 32px; height: 32px; }
@@ -256,10 +239,6 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
   .wallet-card .text-xs { font-size: 10px; }
   #orcamento>form { flex-direction: column; align-items: stretch; }
   #orcamento>form label { font-size: 10px; }
-  .monthly-spending-art { height:200px; padding:20px; }
-  .payment-mascot { height:160px; }
-  .monthly-spending-cards { grid-template-columns: 1fr; }
-  .monthly-spending-value { font-size: 32px; }
   .categories-module .expense-chart-layout { grid-template-columns: 1fr; }
   .mobile-nav { position: fixed; z-index: 40; left: 12px; right: 12px; bottom: max(12px,env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-around; padding: 8px 4px; border: 1px solid var(--border); border-radius: 22px; background: var(--glass); backdrop-filter: blur(22px); box-shadow: 0 8px 35px #0002; }
   .mobile-nav a { min-width: 46px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 8px; color: var(--muted); text-decoration: none; }
@@ -271,7 +250,7 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
 }
 @media(prefers-reduced-motion:reduce) {
   *, *::before, *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }
-  .wallet-card-visual, .category-icon, .payment-mascot, .monthly-spending-art img { transform: none!important; }
+  .wallet-card-visual, .category-icon { transform: none!important; }
 }
 .dialog-panel { animation: none; }
 /* Readable secondary information at every density. */
@@ -286,12 +265,8 @@ label:hover .category-icon, label:focus-within .category-icon, tr:hover .categor
 .insights-content .text-xs { font-size: 11px; }
 .categories-module .insights-content ol .text-sm { font-size: 12px; }
 .summary-list li>span:nth-child(2), .summary-list strong { font-size: 12px; }
-.module-link, .summary-number span, .monthly-spending-caption { font-size: 11px; }
-.monthly-spending-details dt { font-size: 10px; }
-.monthly-spending-details dd { font-size: 12px; }
-.monthly-spending-heading h3 { font-size: 14px; }
-.monthly-spending-heading>span { font-size: 8px; }
-#previsao-mensal>p { font-size: 11px; }
+.module-link, .summary-number span { font-size: 11px; }
+
 .support-summary .module-heading { display: block; }
 html { overflow-x: clip; }
 body { position: relative; }
@@ -345,11 +320,6 @@ body { position: relative; }
 .support-summary .summary-list li { border-color:#e8dfc5; }
 .ranking-module li:first-child>span:first-child { background:var(--sun); color:var(--text); }
 .ranking-module li:nth-child(2)>span:first-child { background:var(--brand-tint); color:var(--button); }
-.monthly-spending-credit .monthly-spending-content { background:var(--brand-tint); }
-.monthly-spending-pix .monthly-spending-content { background:var(--sun-tint); }
-.monthly-spending-heading>span { color:var(--button); background:#ffffffb3; border-radius:999px; padding:5px 7px; }
-.monthly-spending-credit .monthly-spending-details { border-color:#ccdfd1; }
-.monthly-spending-pix .monthly-spending-details { border-color:#ead99f; }
 #lancamentos thead tr { background:var(--brand-tint); }
 .nav-add { box-shadow:0 4px 0 #ffce52,0 8px 16px #124f3c20; }
 @media(max-width:767px) {
@@ -379,8 +349,8 @@ body { position: relative; }
 
 /* Lorômetro: a monthly commitment thermometer, with explicit thresholds. */
 #lorometro { grid-column:1 / 3; grid-row:2; }
-#previsao-mensal { grid-row:3; }
-#analises { grid-column:3; grid-row:3; }
+
+#analises { grid-column:1 / -1; grid-row:3; }
 .lorometro { --meter-color:var(--accent); }
 .lorometro-warning { --meter-color:#866000; }
 .lorometro-danger { --meter-color:var(--expense); }
@@ -411,12 +381,12 @@ body { position: relative; }
 .lorometro-note { font-size:9px; line-height:1.8; color:var(--muted); border-top:1px solid var(--border); margin-top:18px; padding-top:14px; }
 @media(min-width:768px) and (max-width:1199px) {
   #lorometro { grid-column:1 / -1; grid-row:2; }
-  #previsao-mensal { grid-column:1 / -1; grid-row:3; }
-  #ranking { grid-row:4; } #resumo-lancamentos { grid-row:4; }
-  #analises { grid-column:1 / -1; grid-row:5; } #lancamentos { grid-row:6; }
+
+  #ranking { grid-row:3; } #resumo-lancamentos { grid-row:3; }
+  #analises { grid-column:1 / -1; grid-row:4; } #lancamentos { grid-row:5; }
 }
 @media(max-width:767px) {
-  #lorometro { order:1; } #previsao-mensal { order:2; } #ranking { order:3; } #resumo-lancamentos { order:4; }
+  #lorometro { order:1; } #ranking { order:3; } #resumo-lancamentos { order:4; }
   .lorometro-body { grid-template-columns:minmax(0,1fr) 110px; gap:8px; }
   .lorometro-mascot { width:110px; height:150px; }
   .lorometro-state { font-size:16px; } .lorometro-percentage { font-size:30px; }
@@ -455,5 +425,20 @@ body { position: relative; }
 .banking-empty { min-height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:20px; text-align:center; color:var(--muted); font-size:12px; }
 .banking-empty small,.banking-footnote { color:var(--muted); font-size:10px; line-height:1.8; }
 .banking-footnote { margin-top:16px; }
-@media(min-width:768px) and (max-width:1199px) { #bancos { grid-row:7; } }
+@media(min-width:768px) and (max-width:1199px) { #bancos { grid-row:6; } }
 @media(max-width:767px) { #bancos { order:7; } .banking-module>.module-heading { align-items:flex-start; flex-wrap:wrap; } .banking-mode { font-size:9px; } }
+
+/* Bank-backed wallet keeps the existing leather card and privacy control. */
+.wallet-source { margin-bottom:16px; }
+.bank-wallet-title { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; }
+.bank-wallet-pix { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+.bank-wallet-pix>div { display:flex; gap:10px; padding:16px 18px; border-radius:16px; background:var(--surface); color:var(--text); }
+.bank-wallet-pix span { font-size:11px; }
+.bank-wallet-pix strong { display:block; margin-top:7px; font-size:20px; overflow-wrap:anywhere; }
+.bank-wallet-details { margin-top:16px; padding:20px; }
+.bank-wallet-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.bank-wallet-tabs button { text-align:left; border:1px solid var(--border); border-radius:13px; padding:12px; color:var(--text); background:var(--surface); font-size:11px; }
+.bank-wallet-tabs button[aria-pressed=true] { border-color:var(--accent); background:var(--soft); box-shadow:inset 0 0 0 1px var(--accent); }
+.bank-wallet-tabs strong { display:block; margin-top:8px; font-size:16px; overflow-wrap:anywhere; }
+.bank-wallet-list-title { font-size:14px; margin:22px 0 12px; }
+@media(max-width:767px) { .bank-wallet-tabs { grid-template-columns:1fr 1fr; } .bank-wallet-details { padding:14px; } .bank-wallet-pix { grid-template-columns:1fr; } }
