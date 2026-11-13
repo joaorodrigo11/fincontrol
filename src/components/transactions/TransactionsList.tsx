@@ -1,6 +1,8 @@
 import { useDialogFocus } from '../ui/useDialogFocus'
 import { useMemo, useState } from 'react'
 import { Search, Trash2 } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { CategoryIcon } from '../ui/CategoryIcon'
 import type { Transaction } from '../../types/database'
 import { useFinance } from '../../contexts/useFinance'
@@ -22,7 +24,8 @@ const statusLabels: Record<Transaction['status'], string> = {
 }
 
 export function TransactionsList() {
-  const { monthTransactions, deleteTransaction, saving } = useFinance()
+  const { monthTransactions, month, deleteTransaction, saving } = useFinance()
+  const monthLabel = format(parseISO(`${month}-01`), 'MMMM yyyy', { locale: ptBR })
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [target, setTarget] = useState<Transaction | null>(null)
@@ -63,20 +66,23 @@ export function TransactionsList() {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.19em] text-[var(--muted)]">
-            Tudo em um só lugar
+            Seu caderninho financeiro
           </p>
           <h2 id="transactions-title" className="mt-1 text-xl font-semibold tracking-tight text-[var(--text)]">
             Lançamentos do mês
           </h2>
         </div>
-        <span className="text-xs text-[var(--muted)]">
-          {monthTransactions.length} {monthTransactions.length === 1 ? 'registro' : 'registros'}
-        </span>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_8px_24px_-22px_rgba(38,51,39,0.35)]">
-        <div className="flex flex-col gap-3 border-b border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <label className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--soft)] px-3 sm:w-64">
+      <div className="transactions-notebook">
+        <div className="notebook-binding" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <span key={index} />)}</div>
+        <div className="notebook-paper">
+        <div className="notebook-page-heading">
+          <div><span className="notebook-kicker">MEU CADERNINHO</span><p className="notebook-month">{monthLabel}</p></div>
+          <span className="notebook-page-number">{monthTransactions.length} {monthTransactions.length === 1 ? 'anotação' : 'anotações'}</span>
+        </div>
+        <div className="notebook-toolbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="notebook-search flex h-10 items-center gap-2 rounded-xl px-3 sm:w-64">
             <Search size={16} className="shrink-0 text-[var(--muted)]" />
             <input
               type="search"
@@ -87,7 +93,7 @@ export function TransactionsList() {
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
             />
           </label>
-          <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
+          <label className="notebook-filter flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
             Situação
             <select
               value={filter}
@@ -95,16 +101,16 @@ export function TransactionsList() {
               className="h-10 rounded-xl border border-[var(--border)] bg-[var(--soft)] px-3 text-sm text-[var(--text)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
             >
               <option value="all">Todas</option>
-              <option value="paid">Pagas</option>
+              <option value="paid">Realizados</option>
               <option value="pending">Na fatura</option>
-              <option value="planned">Previstas</option>
+              <option value="planned">Previstos</option>
             </select>
           </label>
         </div>
 
         {filtered.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[690px] border-collapse text-left">
+          <div className="notebook-table-wrap overflow-x-auto">
+            <table className="notebook-table w-full min-w-[690px] border-collapse text-left">
               <thead>
                 <tr className="bg-[var(--soft)] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
                   <th scope="col" className="px-5 py-3">Lançamento</th>
@@ -118,15 +124,16 @@ export function TransactionsList() {
               <tbody>
                 {filtered.map((transaction) => {
                   const isIncome = transaction.type === 'income'
+                  const statusLabel = isIncome && transaction.status === 'paid' ? 'Recebido' : statusLabels[transaction.status]
                   return (
-                    <tr key={transaction.id} className="border-t border-[var(--border)] transition hover:bg-[var(--soft)]">
+                    <tr key={transaction.id} className="notebook-row border-t border-[var(--border)] transition hover:bg-[var(--soft)]">
                       <th scope="row" className="px-5 py-3.5 font-normal">
                         <span className="flex min-w-48 items-center gap-3">
                           <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${isIncome ? 'bg-[var(--soft)] text-[var(--muted)]' : 'bg-[var(--soft)] text-[var(--muted)]'}`}>
                             <CategoryIcon category={isIncome ? 'Entrada' : transaction.category} />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[var(--text)]">{transaction.title}</span>
+                            <span className="notebook-title block truncate text-sm font-semibold text-[var(--text)]" title={transaction.title}>{transaction.title}</span>
                             <span className="mt-0.5 block text-xs text-[var(--muted)]">
                               {paymentLabels[transaction.payment_method]}
                               {transaction.installment_current && transaction.installment_total
@@ -134,7 +141,7 @@ export function TransactionsList() {
                                 : ''}
                             </span>
                             <span className="transaction-mobile-meta">
-                              {transaction.category} · {formatDate(transaction.date)} · {isIncome ? 'Recebido' : statusLabels[transaction.status]}
+                              {transaction.category} · {formatDate(transaction.date)} · {statusLabel}
                             </span>
                           </span>
                         </span>
@@ -142,14 +149,14 @@ export function TransactionsList() {
                       <td className="px-3 py-3.5 text-sm text-[var(--muted)]">{transaction.category}</td>
                       <td className="px-3 py-3.5 text-sm text-[var(--muted)]">{formatDate(transaction.date)}</td>
                       <td className="px-3 py-3.5">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        <span className={`notebook-status inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                           transaction.status === 'paid'
                             ? 'bg-[var(--soft)] text-[var(--text)]'
                             : transaction.status === 'pending'
                               ? 'bg-[var(--soft)] text-[var(--muted)]'
                               : 'bg-[var(--soft)] text-[var(--muted)]'
                         }`}>
-                          {statusLabels[transaction.status]}
+                          {statusLabel}
                         </span>
                       </td>
                       <td data-flow={isIncome ? 'income' : 'expense'} className="px-3 py-3.5 text-right text-sm font-semibold">
@@ -177,7 +184,7 @@ export function TransactionsList() {
             </table>
           </div>
         ) : (
-          <div className="empty-state grid min-h-40 place-items-center px-6 text-center"><img src="/art/empty.svg" alt="" width="120" height="90" />
+          <div className="notebook-empty empty-state grid min-h-40 place-items-center px-6 text-center"><img src="/art/empty.svg" alt="" width="120" height="90" />
             <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">
               {monthTransactions.length
                 ? 'Nenhum lançamento corresponde à busca ou ao filtro.'
@@ -185,6 +192,8 @@ export function TransactionsList() {
             </p>
           </div>
         )}
+        <div className="notebook-footer"><span>Despesas e receitas, uma anotação de cada vez.</span><span aria-live="polite">{filtered.length} de {monthTransactions.length} registros</span></div>
+        </div>
       </div>
 
       {target && (
