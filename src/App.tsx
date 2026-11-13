@@ -18,6 +18,9 @@ const ExpenseInsights = lazy(
 const MonthlySpendingDashboard = lazy(
   () => import('./components/dashboard/MonthlySpendingDashboard').then((module) => ({ default: module.MonthlySpendingDashboard })),
 )
+const BankConnections = lazy(
+  () => import('./components/banking/BankConnections').then(module => ({ default: module.BankConnections })),
+)
 
 function App() {
   const { user, loading: authLoading } = useAuth()
@@ -94,6 +97,7 @@ function App() {
             <MonthlySpendingDashboard />
             <ExpenseInsights />
             <TransactionsList />
+            <BankConnections key={user.id} />
           </Suspense>
         </div>
         <footer className="mt-12 border-t border-[var(--border)] pt-5 text-center text-xs text-[var(--muted)]">

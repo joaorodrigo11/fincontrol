@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, ChartPie, Gauge, House, ListOrdered, WalletCards } from 'lucide-react'
+import { ArrowUpRight, ChartPie, Gauge, House, Landmark, ListOrdered, WalletCards } from 'lucide-react'
 
 const sections = [
   { id: 'orcamento', label: 'Visão geral', icon: House },
@@ -7,6 +7,7 @@ const sections = [
   { id: 'previsao-mensal', label: 'Cartão e Pix', icon: WalletCards },
   { id: 'analises', label: 'Categorias', icon: ChartPie },
   { id: 'lancamentos', label: 'Lançamentos', icon: ListOrdered },
+  { id: 'bancos', label: 'Bancos', icon: Landmark },
 ]
 
 export function Sidebar() {

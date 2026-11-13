@@ -425,3 +425,35 @@ body { position: relative; }
   .lorometro-values dd { margin-top:0; text-align:right; }
   .lorometro-legend { gap:8px; } .lorometro-pill { font-size:8px; padding:6px 8px; }
 }
+/* Bank connection sandbox stays separate from the financial ledger. */
+#bancos { grid-column:1 / -1; grid-row:5; }
+.banking-module h2 { display:flex; align-items:center; gap:8px; }
+.banking-mode { display:flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; background:var(--sun-tint); color:var(--text); font-size:10px; white-space:nowrap; }
+.banking-test-note { margin:18px 0; padding:12px 14px; border-radius:12px; background:var(--soft); font-size:11px; line-height:1.8; color:var(--muted); }
+.banking-actions,.banking-connection-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.banking-secondary,.banking-disconnect { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:0 12px; font-size:11px; border:1px solid var(--border); border-radius:12px; color:var(--text); background:var(--surface); }
+.banking-disconnect { color:var(--expense); }
+.banking-module button:disabled { opacity:.5; }
+.banking-setup { font-size:10px; color:var(--muted); line-height:1.7; }
+.banking-feedback { margin-top:16px; padding:12px; border:1px solid var(--border); border-radius:12px; font-size:11px; line-height:1.8; }
+.banking-success { color:var(--button); background:var(--brand-tint); }
+.banking-connection-controls { margin-top:20px; align-items:flex-end; }
+.banking-connection-controls label { display:grid; gap:7px; flex:1; min-width:180px; font-size:10px; color:var(--muted); }
+.banking-connection-controls select { min-height:44px; padding:0 12px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:12px; }
+.banking-account-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:20px 0; }
+.banking-account-grid article { min-width:0; padding:16px; background:var(--brand-tint); border-radius:16px; }
+.banking-account-grid span,.banking-account-grid small { display:block; font-size:10px; color:var(--muted); }
+.banking-account-grid h3 { font-size:12px; margin:6px 0 12px; }
+.banking-account-grid strong { display:block; font-size:20px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.banking-account-grid small { margin-top:6px; line-height:1.7; }
+.banking-table-wrap { overflow-x:auto; position:relative; margin-top:20px; }
+.banking-table-wrap table { width:100%; min-width:620px; border-collapse:collapse; text-align:left; }
+.banking-table-wrap td,.banking-table-wrap th { padding:12px 8px; border-bottom:1px solid var(--border); font-size:11px; }
+.banking-table-wrap th { font-weight:500; }
+.banking-table-wrap thead { background:var(--soft); color:var(--muted); }
+.banking-table-wrap td:last-child,.banking-table-wrap th:last-child { text-align:right; white-space:nowrap; }
+.banking-empty { min-height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:20px; text-align:center; color:var(--muted); font-size:12px; }
+.banking-empty small,.banking-footnote { color:var(--muted); font-size:10px; line-height:1.8; }
+.banking-footnote { margin-top:16px; }
+@media(min-width:768px) and (max-width:1199px) { #bancos { grid-row:7; } }
+@media(max-width:767px) { #bancos { order:7; } .banking-module>.module-heading { align-items:flex-start; flex-wrap:wrap; } .banking-mode { font-size:9px; } }
